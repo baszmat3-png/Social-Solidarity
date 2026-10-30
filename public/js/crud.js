@@ -7,12 +7,12 @@ const prog = p => `<div class="pr" style="min-width:90px"><i style="width:${Math
 const ST2 = ['مفعل', 'موقوف'];
 const refsOpt = (c, only) => () => live(c).filter(x => !only || only(x)).map(x => [x.id, x.name]);
 const dupName = (k, name, id, extra) => live(k).some(x => x.id !== id && x.name.trim() === name.trim() && (!extra || extra(x)));
-const FUND_TYPES = ['عام', 'زكاة', 'صدقات', 'وقف', 'كفالة', 'أخرى'];
+const FUND_TYPES = catOpts('fund');
 
 const ENT = {
   funds: {
     t: 'إدارة الصناديق', ic: 'bi-safe', add: 'إضافة صندوق', mk: 'إنشاء الصندوق', sg: 'صندوق', ph: 'بحث بالاسم...', g: 'funds',
-    fields: [{ id: 'name', l: 'اسم الصندوق', t: 'text', req: 1, ph: 'اسم الصندوق' }, { id: 'type', l: 'نوع الصندوق', t: 'select', opts: FUND_TYPES, blank: 1 },
+    fields: [{ id: 'name', l: 'اسم الصندوق', t: 'text', req: 1, ph: 'اسم الصندوق' }, { id: 'type', l: 'نوع الصندوق', t: 'select', opts: FUND_TYPES, blank: 1, cg: 1 },
       { id: 'open', l: 'الرصيد الافتتاحي (د.ع)', t: 'number', hint: 'اتركه فارغاً إذا صندوق جديد بدون رصيد سابق' }, { id: 'status', l: 'الحالة', t: 'select', opts: ST2, def: 'مفعل' }, { id: 'desc', l: 'الوصف', t: 'area', ph: 'وصف الصندوق' }],
     cols: [{ id: 'name', l: 'اسم الصندوق', r: r => `<b>${esc(r.name)}</b>`, s: r => r.name }, { id: 'type', l: 'النوع', r: r => esc(r.type || '—'), s: r => r.type || '' },
       { id: 'open', l: 'الرصيد الافتتاحي', r: r => money(r.open), s: r => num(r.open) }, { id: 'bal', l: 'الرصيد الحالي', r: r => `<b>${money(fundBal(r.id))}</b>`, s: r => fundBal(r.id) }, { id: 'status', l: 'الحالة', r: r => stb(r.status), s: r => r.status }],
@@ -51,15 +51,15 @@ const ENT = {
       { id: 'family', l: 'العائلة', t: 'select', opts: refsOpt('families', f => f.status === 'نشطة'), blank: 'ابحث عن عائلة أو اتركه فارغاً...', tab: 0 }, { id: 'area', l: 'المنطقة', t: 'select', opts: refsOpt('areas', a => a.status === 'مفعل'), blank: 'ابحث عن منطقة (اختياري)...', tab: 0 },
       { id: 'sex', l: 'الجنس', t: 'select', opts: ['ذكر', 'أنثى'], blank: 1, tab: 0, half: 1 }, { id: 'status', l: 'الحالة', t: 'select', opts: ['نشط', 'متوقف', 'معلق'], def: 'نشط', tab: 0, half: 1 },
       { id: 'head', l: 'رب العائلة', t: 'toggle', tab: 0, after: `<div style="text-align:center;font-size:13px;line-height:2"><span class="bg">نشط</span> يستلم المساعدات<br><span class="bg x">متوقف</span> توقف مؤقتاً عن الاستلام<br><span class="bg w">معلق</span> قيد المراجعة أو التحقق</div>` },
-      { id: 'birth', l: 'تاريخ الميلاد', t: 'date', tab: 1 }, { id: 'idno', l: 'رقم الهوية', t: 'text', tab: 1, ph: 'رقم الهوية' }, { id: 'marital', l: 'الحالة الاجتماعية', t: 'select', opts: ['أعزب', 'متزوج', 'أرمل', 'مطلق'], blank: 1, tab: 1 },
-      { id: 'job', l: 'حالة التوظيف', t: 'select', opts: ['عاطل عن العمل', 'موظف', 'عمل حر', 'متقاعد', 'طالب', 'لا يعمل (عاجز)'], blank: 1, tab: 1 }, { id: 'edu', l: 'المستوى التعليمي', t: 'select', opts: ['أمي', 'ابتدائي', 'متوسط', 'إعدادي', 'دبلوم', 'بكالوريوس', 'دراسات عليا'], blank: 1, tab: 1 },
+      { id: 'birth', l: 'تاريخ الميلاد', t: 'date', tab: 1 }, { id: 'idno', l: 'رقم الهوية', t: 'text', tab: 1, ph: 'رقم الهوية' }, { id: 'marital', l: 'الحالة الاجتماعية', t: 'select', opts: catOpts('marital'), blank: 1, cg: 1, tab: 1 },
+      { id: 'job', l: 'حالة التوظيف', t: 'select', opts: catOpts('job'), blank: 1, cg: 1, tab: 1 }, { id: 'edu', l: 'المستوى التعليمي', t: 'select', opts: catOpts('edu'), blank: 1, cg: 1, tab: 1 },
       { id: 'income', l: 'الدخل الشهري', t: 'number', tab: 1 }, { id: 'addr', l: 'العنوان التفصيلي', t: 'text', tab: 1, ph: 'العنوان' }, { id: 'health', l: 'الحالة الصحية', t: 'text', tab: 1, ph: 'الحالة الصحية' }, { id: 'notes', l: 'ملاحظات', t: 'area', tab: 1 },
-      { id: 'cats', l: 'أنواع الاستفادة', t: 'multi', opts: () => live('cats').filter(c => c.status === 'مفعل').map(c => [c.id, c.name]), tab: 2 }],
+      { id: 'cats', l: 'أنواع الاستفادة', t: 'multi', opts: () => catsOf('benef').filter(c => c.status === 'مفعل').map(c => [c.id, c.name]), tab: 2 }],
     cols: [{ id: 'name', l: 'الاسم', r: r => `<b>${esc(r.name)}</b>${r.head ? ' <i class="bi bi-star-fill" style="color:#e0a800" title="رب العائلة"></i>' : ''}`, s: r => r.name }, { id: 'phone', l: 'الهاتف', r: r => esc(r.phone || '—') },
       { id: 'family', l: 'العائلة', r: r => rf('families', r.family), s: r => nm('families', r.family, '') }, { id: 'area', l: 'المنطقة', r: r => rf('areas', r.area), s: r => nm('areas', r.area, '') },
       { id: 'cats', l: 'نوع الاستفادة', r: r => (r.cats || []).map(c => catBadge(c)).join(' ') || '—' }, { id: 'status', l: 'الحالة', r: r => stb(r.status), s: r => r.status }],
     search: r => [r.name, r.phone, r.idno, r.addr].join(' '),
-    filters: [{ id: 'status', l: 'الحالة', opts: ['نشط', 'متوقف', 'معلق'], test: (r, v) => r.status === v }, { id: 'cat', l: 'كل الأنواع', opts: () => live('cats').map(c => [c.id, c.name]), test: (r, v) => (r.cats || []).includes(v) },
+    filters: [{ id: 'status', l: 'الحالة', opts: ['نشط', 'متوقف', 'معلق'], test: (r, v) => r.status === v }, { id: 'cat', l: 'كل الأنواع', opts: () => catsOf('benef').map(c => [c.id, c.name]), test: (r, v) => (r.cats || []).includes(v) },
       { id: 'area', l: 'المنطقة', opts: refsOpt('areas'), test: (r, v) => r.area === v }, { id: 'sex', l: 'الجنس', opts: ['ذكر', 'أنثى'], test: (r, v) => r.sex === v }],
     bulkStatus: [['نشط', 'تفعيل', 'bi-check-circle', 'g'], ['متوقف', 'إيقاف', 'bi-pause-circle', 'w']],
     refs: r => [['صرفية', S.expenses.filter(x => !x.deleted && x.ben === r.id).length]],
@@ -68,11 +68,11 @@ const ENT = {
   donors: {
     t: 'إدارة المتبرعين', ic: 'bi-person-hearts', add: 'إضافة متبرع', mk: 'إضافة المتبرع', sg: 'متبرع', ph: 'بحث بالاسم، الهاتف، البريد...', g: 'donors',
     fields: [{ id: 'name', l: 'اسم المتبرع', t: 'text', req: 1, ph: 'اسم المتبرع' }, { id: 'phone', l: 'رقم الهاتف', t: 'tel' }, { id: 'email', l: 'البريد الإلكتروني', t: 'email' }, { id: 'idno', l: 'رقم الهوية', t: 'text' },
-      { id: 'type', l: 'نوع المتبرع', t: 'select', opts: ['فرد', 'شركة', 'جهة'], blank: 1 }, { id: 'city', l: 'المدينة', t: 'text' }, { id: 'addr', l: 'العنوان', t: 'text' }, { id: 'status', l: 'الحالة', t: 'select', opts: ST2, def: 'مفعل' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
+      { id: 'type', l: 'نوع المتبرع', t: 'select', opts: catOpts('donor'), blank: 1, cg: 1 }, { id: 'city', l: 'المدينة', t: 'text' }, { id: 'addr', l: 'العنوان', t: 'text' }, { id: 'status', l: 'الحالة', t: 'select', opts: ST2, def: 'مفعل' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
     cols: [{ id: 'name', l: 'الاسم', r: r => `<b>${esc(r.name)}</b>`, s: r => r.name }, { id: 'phone', l: 'الهاتف', r: r => esc(r.phone || '—') }, { id: 'type', l: 'النوع', r: r => esc(r.type || '—'), s: r => r.type || '' }, { id: 'city', l: 'المدينة', r: r => esc(r.city || '—') },
       { id: 'tot', l: 'إجمالي التبرعات', r: r => money(sum(S.donations.filter(d => okD(d) && d.donor === r.id))), s: r => sum(S.donations.filter(d => okD(d) && d.donor === r.id)) }, { id: 'status', l: 'الحالة', r: r => stb(r.status), s: r => r.status }],
     search: r => [r.name, r.phone, r.email, r.idno].join(' '),
-    filters: [{ id: 'type', l: 'كل الأنواع', opts: ['فرد', 'شركة', 'جهة'], test: (r, v) => r.type === v }, { id: 'status', l: 'الحالة', opts: ST2, test: (r, v) => r.status === v }], bulkStatus: ST2,
+    filters: [{ id: 'type', l: 'كل الأنواع', opts: catOpts('donor'), test: (r, v) => r.type === v }, { id: 'status', l: 'الحالة', opts: ST2, test: (r, v) => r.status === v }], bulkStatus: ST2,
     refs: r => [['تبرع', S.donations.filter(x => !x.deleted && x.donor === r.id).length]],
     check: (d, o) => { if (d.email && !/^\S+@\S+\.\S+$/.test(d.email)) return 'البريد الإلكتروني غير صحيح'; if (d.phone && live('donors').some(x => x.id !== (o && o.id) && normPhone(x.phone) === normPhone(d.phone))) return 'رقم الهاتف مسجل لمتبرع آخر'; },
   },
@@ -92,13 +92,13 @@ const ENT = {
     fields: [{ id: 'donor', l: 'المتبرع', t: 'select', opts: refsOpt('donors', d => d.status === 'مفعل'), req: 1, blank: 'اختر المتبرع...' },
       { id: 'campaign', l: 'الحملة', t: 'select', opts: refsOpt('campaigns', c => c.status === 'نشطة'), blank: 'بدون حملة', onchange: 'donCamp(this)' },
       { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
-      { id: 'amount', l: 'المبلغ (د.ع)', t: 'number', req: 1 }, { id: 'method', l: 'طريقة الدفع', t: 'select', opts: ['نقدي', 'تحويل', 'حوالة', 'شيك', 'أخرى'], def: 'نقدي' }, { id: 'date', l: 'التاريخ', t: 'date', req: 1, def: 'today' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
+      { id: 'amount', l: 'المبلغ (د.ع)', t: 'number', req: 1 }, { id: 'method', l: 'طريقة الدفع', t: 'select', opts: catOpts('pay'), def: 'نقدي', cg: 1 }, { id: 'date', l: 'التاريخ', t: 'date', req: 1, def: 'today' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
     cols: [{ id: 'no', l: 'رقم الوصل', r: r => `<span dir="ltr">${rcNo(r)}</span>`, s: r => rcNo(r) }, { id: 'donor', l: 'المتبرع', r: r => `<b>${rf('donors', r.donor)}</b>`, s: r => nm('donors', r.donor) }, { id: 'fund', l: 'الصندوق', r: r => rf('funds', r.fund), s: r => nm('funds', r.fund) },
       { id: 'campaign', l: 'الحملة', r: r => rf('campaigns', r.campaign), s: r => nm('campaigns', r.campaign, '') }, { id: 'amount', l: 'المبلغ', r: r => `<b>${money(r.amount)}</b>`, s: r => num(r.amount) },
       { id: 'date', l: 'التاريخ', r: r => fd(r.date), s: r => r.date }, { id: 'method', l: 'الدفع', r: r => esc(r.method || '—') }, { id: 'status', l: 'الحالة', r: r => stb(r.status || 'مؤكد'), s: r => r.status || 'مؤكد' }],
     search: r => [nm('donors', r.donor), rcNo(r), r.amount, r.notes, nm('campaigns', r.campaign)].join(' '),
     filters: [{ id: 'fund', l: 'كل الصناديق', opts: refsOpt('funds'), test: (r, v) => r.fund === v }, { id: 'campaign', l: 'كل الحملات', opts: refsOpt('campaigns'), test: (r, v) => r.campaign === v },
-      { id: 'method', l: 'طريقة الدفع', opts: ['نقدي', 'تحويل', 'حوالة', 'شيك', 'أخرى'], test: (r, v) => r.method === v }, { id: 'status', l: 'الحالة', opts: ['مؤكد', 'بانتظار التأكيد'], test: (r, v) => (r.status || 'مؤكد') === v }],
+      { id: 'method', l: 'طريقة الدفع', opts: catOpts('pay'), test: (r, v) => r.method === v }, { id: 'status', l: 'الحالة', opts: ['مؤكد', 'بانتظار التأكيد'], test: (r, v) => (r.status || 'مؤكد') === v }],
     dates: 1, total: rows => `الإجمالي: <b>${money(sum(rows.filter(okD)))}</b> د.ع`,
     extra: r => (r.deleted ? '' : `<button class="btn xs o" title="وصل" onclick="rcPreview('${r.id}')"><i class="bi bi-receipt"></i></button>`) + (!r.deleted && r.status === 'بانتظار التأكيد' && can('donations.confirm') ? `<button class="btn xs g" title="تأكيد الاستلام" onclick="approve('donations','${r.id}')"><i class="bi bi-check-lg"></i></button>` : ''),
     prep: (r, isNew) => { if (isNew) r.by = ME.name; if (isNew) r.status = can('donations.confirm') ? 'مؤكد' : 'بانتظار التأكيد'; },
@@ -117,13 +117,13 @@ const ENT = {
   },
   expenses: {
     t: 'الصرفيات', ic: 'bi-cash', add: 'إضافة صرفية', mk: 'تسجيل الصرفية', sg: 'صرفية', ph: 'بحث بالبند، المستفيد...', g: 'expenses',
-    fields: [{ id: 'title', l: 'البند', t: 'text', req: 1, ph: 'مثال: سلة غذائية' }, { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
+    fields: [{ id: 'title', l: 'البند', t: 'text', req: 1, ph: 'مثال: سلة غذائية' }, { id: 'type', l: 'نوع الصرفية', t: 'select', opts: catOpts('exp'), blank: 1, cg: 1 }, { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
       { id: 'campaign', l: 'الحملة (للأموال المقيّدة)', t: 'select', opts: refsOpt('campaigns'), blank: 'بدون حملة' }, { id: 'project', l: 'المشروع', t: 'select', opts: refsOpt('projects'), blank: 'بدون مشروع' }, { id: 'ben', l: 'المستفيد', t: 'select', opts: refsOpt('beneficiaries', b => b.status === 'نشط'), blank: 'بدون مستفيد محدد' },
       { id: 'amount', l: 'المبلغ (د.ع)', t: 'number', req: 1 }, { id: 'date', l: 'التاريخ', t: 'date', req: 1, def: 'today' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
     cols: [{ id: 'date', l: 'التاريخ', r: r => fd(r.date), s: r => r.date }, { id: 'title', l: 'البند', r: r => `<b>${esc(r.title)}</b>`, s: r => r.title }, { id: 'fund', l: 'الصندوق', r: r => rf('funds', r.fund), s: r => nm('funds', r.fund) }, { id: 'ben', l: 'المستفيد', r: r => rf('beneficiaries', r.ben), s: r => nm('beneficiaries', r.ben, '') },
       { id: 'project', l: 'المشروع', r: r => rf('projects', r.project), s: r => nm('projects', r.project, '') }, { id: 'amount', l: 'المبلغ', r: r => `<b>${money(r.amount)}</b>`, s: r => num(r.amount) }, { id: 'status', l: 'الحالة', r: r => stb(r.status || 'معتمدة'), s: r => r.status || 'معتمدة' }],
     search: r => [r.title, nm('beneficiaries', r.ben), nm('projects', r.project), r.amount, r.notes].join(' '),
-    filters: [{ id: 'fund', l: 'كل الصناديق', opts: refsOpt('funds'), test: (r, v) => r.fund === v }, { id: 'project', l: 'كل المشاريع', opts: refsOpt('projects'), test: (r, v) => r.project === v }, { id: 'status', l: 'الحالة', opts: ['معتمدة', 'بانتظار الموافقة'], test: (r, v) => (r.status || 'معتمدة') === v }],
+    filters: [{ id: 'type', l: 'كل الأنواع', opts: catOpts('exp'), test: (r, v) => r.type === v }, { id: 'fund', l: 'كل الصناديق', opts: refsOpt('funds'), test: (r, v) => r.fund === v }, { id: 'project', l: 'كل المشاريع', opts: refsOpt('projects'), test: (r, v) => r.project === v }, { id: 'status', l: 'الحالة', opts: ['معتمدة', 'بانتظار الموافقة'], test: (r, v) => (r.status || 'معتمدة') === v }],
     dates: 1, total: rows => `الإجمالي: <b>${money(sum(rows.filter(okE)))}</b> د.ع`,
     extra: r => !r.deleted && r.status === 'بانتظار الموافقة' && can('expenses.approve') ? `<button class="btn xs g" title="موافقة" onclick="approve('expenses','${r.id}')"><i class="bi bi-check-lg"></i></button>` : '',
     prep: (r, isNew) => { if (isNew) r.status = can('expenses.approve') ? 'معتمدة' : 'بانتظار الموافقة'; },
@@ -138,7 +138,7 @@ const ENT = {
   campaigns: {
     t: 'الحملات', ic: 'bi-megaphone', add: 'إضافة حملة', mk: 'إنشاء الحملة', sg: 'حملة', ph: 'بحث بالاسم أو الوصف...', g: 'campaigns', title: 'إنشاء حملة جديدة',
     fields: [{ id: 'name', l: 'اسم الحملة', t: 'text', req: 1, ph: 'مثال: حملة شتاء 2026' }, { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
-      { id: 'goal', l: 'المبلغ المستهدف (د.ع)', t: 'number' }, { id: 'type', l: 'نوع الحملة', t: 'select', opts: ['شتاء', 'رمضان', 'كفالة', 'علاج', 'إغاثة', 'تعليم', 'أخرى'], blank: 1 },
+      { id: 'goal', l: 'المبلغ المستهدف (د.ع)', t: 'number' }, { id: 'type', l: 'نوع الحملة', t: 'select', opts: catOpts('camp'), blank: 1, cg: 1 }, { id: 'season', l: 'الموسم', t: 'select', opts: catOpts('season'), blank: 1, cg: 1 },
       { id: 'start', l: 'تاريخ البداية', t: 'date', def: 'today' }, { id: 'end', l: 'تاريخ النهاية', t: 'date' }, { id: 'status', l: 'الحالة', t: 'select', opts: ['نشطة', 'مكتملة', 'متوقفة'], def: 'نشطة' },
       { id: 'pub', l: 'عامة', t: 'toggle', def: true }, { id: 'exceed', l: 'تجاوز المستهدف', t: 'toggle', hint: 'السماح باستقبال تبرعات بعد الوصول للهدف' },
       { id: 'restricted', l: 'أموال مقيدة — لا تُصرف إلا على هذه الحملة أو مشاريعها', t: 'toggle' }, { id: 'desc', l: 'الوصف', t: 'area', ph: 'وصف الحملة وأهدافها' }, { id: 'images', l: 'روابط الصور', t: 'links', kind: 'img' }, { id: 'videos', l: 'روابط الفيديوهات', t: 'links', kind: 'vid' }],
@@ -154,7 +154,7 @@ const ENT = {
     t: 'المشاريع', ic: 'bi-building-gear', add: 'إضافة مشروع', mk: 'إنشاء المشروع', sg: 'مشروع', ph: 'بحث بالاسم أو الوصف...', g: 'projects', title: 'إنشاء مشروع جديد',
     fields: [{ id: 'name', l: 'اسم المشروع', t: 'text', req: 1, ph: 'مثال: بناء مدرسة في قضاء الرفاء' }, { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), blank: 'اختر الصندوق...' },
       { id: 'camp', l: 'الحملة المرتبطة (اختياري)', t: 'select', opts: refsOpt('campaigns'), blank: 'ربط بحملة...' }, { id: 'budget', l: 'الميزانية (د.ع)', t: 'number' },
-      { id: 'type', l: 'نوع المشروع', t: 'select', opts: ['بناء', 'كفالة', 'إغاثة', 'تعليم', 'صحة', 'سقيا', 'أخرى'], blank: 1 }, { id: 'area', l: 'المنطقة', t: 'select', opts: refsOpt('areas', a => a.status === 'مفعل'), blank: 'اختر المنطقة...' },
+      { id: 'type', l: 'نوع المشروع', t: 'select', opts: catOpts('proj'), blank: 1, cg: 1 }, { id: 'area', l: 'المنطقة', t: 'select', opts: refsOpt('areas', a => a.status === 'مفعل'), blank: 'اختر المنطقة...' },
       { id: 'start', l: 'تاريخ البداية', t: 'date', def: 'today' }, { id: 'end', l: 'تاريخ النهاية المتوقع', t: 'date' }, { id: 'status', l: 'الحالة', t: 'select', opts: ['تخطيط', 'تنفيذ', 'مكتمل', 'متوقف'], def: 'تخطيط' },
       { id: 'pct', l: 'نسبة إنجاز المشروع', t: 'range' }, { id: 'pub', l: 'مشروع عام (يظهر للجمهور)', t: 'toggle', def: true }, { id: 'desc', l: 'الوصف', t: 'area', ph: 'وصف المشروع وأهدافه' }, { id: 'images', l: 'روابط الصور', t: 'links', kind: 'img' }, { id: 'videos', l: 'روابط الفيديوهات', t: 'links', kind: 'vid' }],
     cols: [{ id: 'name', l: 'المشروع', r: r => `<b>${esc(r.name)}</b>`, s: r => r.name }, { id: 'fund', l: 'الصندوق', r: r => rf('funds', r.fund), s: r => nm('funds', r.fund, '') }, { id: 'budget', l: 'الميزانية', r: r => money(r.budget), s: r => num(r.budget) },
@@ -294,7 +294,7 @@ function approve(k, id) {
 /* ---------- النماذج ---------- */
 let FORM = null;
 function selOpts(f, v) {
-  let o = optList(f.opts); if (v && !o.some(x => x[0] === v)) { const nmv = typeof f.opts === 'function' ? null : v; const lab = ['fund', 'campaign', 'camp', 'area', 'family', 'donor', 'project', 'ben', 'from', 'to'].includes(f.id) ? nm({ fund: 'funds', campaign: 'campaigns', camp: 'campaigns', area: 'areas', family: 'families', donor: 'donors', project: 'projects', ben: 'beneficiaries', from: 'funds', to: 'funds' }[f.id], v, null) : nmv; if (lab) o = [...o, [v, lab]]; }
+  let o = optList(f.opts); if (v && !o.some(x => x[0] === v)) { const nmv = typeof f.opts === 'function' && !f.cg ? null : v; const lab = ['fund', 'campaign', 'camp', 'area', 'family', 'donor', 'project', 'ben', 'from', 'to'].includes(f.id) ? nm({ fund: 'funds', campaign: 'campaigns', camp: 'campaigns', area: 'areas', family: 'families', donor: 'donors', project: 'projects', ben: 'beneficiaries', from: 'funds', to: 'funds' }[f.id], v, null) : nmv; if (lab) o = [...o, [v, lab]]; }
   return (f.blank ? `<option value="">${f.blank === 1 ? '—' : f.blank}</option>` : '') + o.map(([x, l]) => `<option value="${esc(x)}" ${x === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
 }
 function fieldHtml(f, rec) {

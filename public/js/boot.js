@@ -38,7 +38,7 @@ async function boot(fresh) {
       const u = S.users.find(x => x.email.toLowerCase() === me.email.toLowerCase());
       ME.id = u ? u.id : null; ME.name = u ? u.name : 'مدير النظام';
       if (u) refreshMe(); else if (!me.perms.includes('*')) throw Object.assign(new Error('x'), { status: 401 });
-      LASTJ = snap(); if (!fresh && (V === 'pub' && !location.hash || V === 'login')) V = 'home';
+      LASTJ = snap(); if (migrateCats()) save(); if (!fresh && (V === 'pub' && !location.hash || V === 'login')) V = 'home';
     } catch (e) { TOK = ''; AUTH = false; ME = null; try { localStorage.removeItem('tk'); sessionStorage.removeItem('tk'); } catch {} }
   }
   if (!AUTH) { await loadPub(); PUBAT = Date.now(); }

@@ -33,7 +33,28 @@ const DEF_ROLES = [
 
 /* ---------- الحالة ---------- */
 const COLL = ['funds', 'donors', 'areas', 'families', 'beneficiaries', 'campaigns', 'projects', 'donations', 'expenses', 'transfers', 'users', 'roles', 'cats', 'log', 'nf'];
-const DEF_CATS = [['يتيم', '#dc3545', 'bi-person-hearts'], ['أرملة', '#ffc107', 'bi-person'], ['فقير', '#0dcaf0', 'bi-house-exclamation'], ['ذو إعاقة', '#6c757d', 'bi-person-wheelchair'], ['طالب علم', '#0d6efd', 'bi-mortarboard'], ['مسن', '#212529', ''], ['مريض', '#dc3545', 'bi-hospital'], ['أخرى', '#6c757d', 'bi-three-dots']];
+const CAT_GROUPS = [['benef', 'أنواع المستفيدين'], ['marital', 'الحالة الاجتماعية'], ['job', 'حالة التوظيف'], ['edu', 'المستوى التعليمي'], ['fund', 'أنواع الصناديق'], ['donor', 'أنواع المتبرعين'], ['pay', 'طرق الدفع'], ['freq', 'فترات التكرار'], ['exp', 'أنواع الصرفيات'], ['camp', 'أنواع الحملات'], ['season', 'المواسم'], ['proj', 'أنواع المشاريع'], ['pmove', 'أنواع حركات المشاريع']];
+const _R = '#dc3545', _Y = '#ffc107', _S = '#0dcaf0', _G = '#6c757d', _B = '#0d6efd', _D = '#212529', _K = '#198754';
+const DEF_CATS = {
+  benef: [['يتيم', _R, 'bi-person-hearts'], ['أرملة', _Y, 'bi-person'], ['فقير', _S, 'bi-house-exclamation'], ['ذو إعاقة', _G, 'bi-person-wheelchair'], ['طالب علم', _B, 'bi-mortarboard'], ['مسن', _D, ''], ['مريض', _R, 'bi-hospital'], ['أخرى', _G, 'bi-three-dots']],
+  marital: [['أعزب/عزباء', _S, ''], ['متزوج/ة', _K, ''], ['مطلق/ة', _Y, ''], ['أرمل/ة', _R, '']],
+  job: [['موظف', _K, ''], ['عاطل عن العمل', _R, ''], ['طالب', _S, ''], ['متقاعد', _G, ''], ['ذو إعاقة', _Y, ''], ['عامل حر', _B, ''], ['ربة منزل', _S, '']],
+  edu: [['أمي', _D, ''], ['يقرأ ويكتب', _G, ''], ['ابتدائي', _S, ''], ['متوسط', _B, ''], ['إعدادي', _K, ''], ['دبلوم', _Y, ''], ['بكالوريوس', _B, ''], ['دراسات عليا', _R, '']],
+  fund: [['صندوق عام', _B, 'bi-box-seam'], ['صندوق الأيتام', _R, 'bi-person-hearts'], ['صندوق الطوارئ', _Y, 'bi-exclamation-triangle'], ['صندوق موسمي', _S, 'bi-calendar-event'], ['صندوق استثماري', _K, 'bi-graph-up-arrow']],
+  donor: [['فرد', _B, 'bi-person'], ['شركة', _K, 'bi-building'], ['جهة', _S, 'bi-bank']],
+  pay: [['نقدي', _K, 'bi-cash'], ['تحويل مصرفي', _B, 'bi-bank'], ['صك / شيك', _S, 'bi-receipt'], ['دفع إلكتروني', _Y, 'bi-credit-card'], ['عيني (مواد)', _G, 'bi-box'], ['زين كاش', _K, 'bi-phone'], ['آسيا حوالة', _B, 'bi-arrow-left-right']],
+  freq: [['أسبوعي', _S, ''], ['شهري', _B, ''], ['ربع سنوي', _K, ''], ['نصف سنوي', _Y, ''], ['سنوي', _R, '']],
+  exp: [['مساعدة مباشرة', _K, 'bi-hand-thumbs-up'], ['راتب / كفالة شهرية', _B, 'bi-wallet2'], ['مشروع خيري', _S, 'bi-building'], ['مصاريف تشغيلية', _G, 'bi-gear'], ['طوارئ', _R, 'bi-exclamation-diamond'], ['إيجار', _Y, 'bi-house'], ['علاج طبي', _R, 'bi-hospital'], ['رسوم دراسية', _B, 'bi-mortarboard']],
+  camp: [['حملة عامة', _B, 'bi-megaphone'], ['حملة شخصية', _S, 'bi-person-standing'], ['حملة عائلية', _K, 'bi-people'], ['حملة موسمية', _Y, 'bi-calendar-event'], ['حملة طوارئ', _R, 'bi-exclamation-circle'], ['حملة استثمارية', _K, 'bi-graph-up']],
+  season: [['شهر رمضان', _K, 'bi-moon-stars'], ['عيد الفطر', _B, 'bi-gift'], ['عيد الأضحى', _S, 'bi-gift-fill'], ['محرم / عاشوراء', _D, 'bi-calendar'], ['موسم الشتاء', _S, 'bi-snow'], ['موسم الصيف', _Y, 'bi-sun'], ['بداية العام الدراسي', _B, 'bi-backpack']],
+  proj: [['مشروع استثماري', _K, 'bi-graph-up'], ['مشروع إنشائي', _B, 'bi-buildings'], ['مشروع تعليمي', _S, 'bi-book'], ['مشروع صحي', _R, 'bi-hospital'], ['مشروع زراعي', _K, 'bi-tree']],
+  pmove: [['استثمار', _B, 'bi-arrow-down-circle'], ['مصروف', _R, 'bi-arrow-up-circle'], ['إيراد', _K, 'bi-arrow-down-circle-fill']],
+};
+/* الحقول التي تحفظ اسم التصنيف (لمنع الحذف أثناء الاستخدام وتحديث الاسم عند إعادة التسمية) */
+const CAT_USE = { marital: [['beneficiaries', 'marital']], job: [['beneficiaries', 'job']], edu: [['beneficiaries', 'edu']], fund: [['funds', 'type']], donor: [['donors', 'type']], pay: [['donations', 'method']], exp: [['expenses', 'type']], camp: [['campaigns', 'type']], season: [['campaigns', 'season']], proj: [['projects', 'type']] };
+const seedCats = (g, t) => DEF_CATS[g].map((c, i) => ({ id: 'c_' + g + '_' + i, grp: g, name: c[0], color: c[1], icon: c[2], status: 'مفعل', _c: t + i, _u: t }));
+const catsOf = g => S.cats.filter(c => !c.deleted && (c.grp || 'benef') === g).sort((a, b) => a._c - b._c);
+const catOpts = g => () => catsOf(g).filter(c => c.status === 'مفعل').map(c => c.name);
 const COLORS = [['أحمر', '#dc3545'], ['أصفر', '#ffc107'], ['سماوي', '#0dcaf0'], ['رمادي', '#6c757d'], ['أزرق', '#0d6efd'], ['غامق', '#212529'], ['أخضر', '#198754'], ['بنفسجي', '#6f42c1'], ['برتقالي', '#fd7e14']];
 const DEF_R = { tpl: 1, size: 'A5', orient: 'portrait', copies: 2, mode: 'same', els: { logo: 1, qr: 1, sign: 1, stamp: 1, words: 1, rcv: 1, notes: 1 } };
 const DEF_P = { name: 'مؤسستي الخيرية', about: '', sections: {}, statsDetail: {}, fin: false, slider: [], videos: [], social: {}, phone: '', email: '', site: '', address: '', city: 'بغداد', province: 'بغداد', logo: '', cover: '' };
@@ -41,10 +62,17 @@ function freshState() {
   const t = Date.now(), S = {};
   COLL.forEach(c => S[c] = []);
   S.roles = DEF_ROLES.map((r, i) => ({ id: i ? 'r_' + uid() : 'r_admin', name: r[0], perms: r[1], sys: !!r[2], _c: t + i, _u: t }));
-  S.cats = DEF_CATS.map((c, i) => ({ id: 'c_' + uid(), name: c[0], color: c[1], icon: c[2], status: 'مفعل', _c: t + i, _u: t }));
-  S.funds = [{ id: 'f_' + uid(), name: 'الصندوق العام', type: 'عام', open: 0, status: 'مفعل', _c: t, _u: t }];
+  S.cats = CAT_GROUPS.flatMap(g => seedCats(g[0], t));
+  S.funds = [{ id: 'f_' + uid(), name: 'الصندوق العام', type: 'صندوق عام', open: 0, status: 'مفعل', _c: t, _u: t }];
   S.R = { ...DEF_R, _u: 0 }; S.P = { ...DEF_P, _u: 0 }; S.NS = {};
   return S;
+}
+/* ترحيل البيانات القديمة: نسب التصنيفات القديمة لمجموعة المستفيدين وإضافة المجموعات الناقصة */
+function migrateCats() {
+  const t = Date.now(); let ch = false;
+  S.cats.forEach(c => { if (!c.grp) { c.grp = 'benef'; c._u = t; ch = true; } });
+  CAT_GROUPS.forEach(g => { if (!S.cats.some(c => c.grp === g[0])) { S.cats.push(...seedCats(g[0], t)); ch = true; } });
+  return ch;
 }
 let S = freshState(), ME = null, TOK = '', AUTH = false, PUB = null;
 const live = c => S[c].filter(x => !x.deleted);

@@ -143,26 +143,35 @@ function roleDel(id) {
 }
 
 /* ---------- التصنيفات ---------- */
+let CG = 'benef';
+const catUse = c => (c.grp || 'benef') === 'benef' ? live('beneficiaries').filter(b => (b.cats || []).includes(c.id)).length : (CAT_USE[c.grp] || []).reduce((n, [co, f]) => n + live(co).filter(r => r[f] === c.name).length, 0);
+function catGrp(g) { CG = g; render(true); }
 function cats() {
   if (!can('cats.view')) return noAccess();
-  const L = [...live('cats')].sort((a, b) => a._c - b._c), cc = can('cats.create'), ce = can('cats.edit'), cd = can('cats.delete');
+  const L = catsOf(CG), gl = CAT_GROUPS.find(x => x[0] === CG)[1], cc = can('cats.create'), ce = can('cats.edit'), cd = can('cats.delete');
   const cn = c => (COLORS.find(x => x[1] === c) || ['—'])[0];
-  return `<h2><i class="bi bi-tags"></i> التصنيفات</h2>${cc ? `<div class="card"><label class="f">اسم التصنيف الجديد <i>*</i></label><input id="cn" placeholder="اسم التصنيف الجديد"><div class="grid"><div><label class="f">اللون</label><select id="cc">${COLORS.map(c => `<option value="${c[1]}">${c[0]}</option>`).join('')}</select></div><div><label class="f">الأيقونة (اختياري)</label><input id="ci" dir="ltr" placeholder="bi-heart"></div></div><button class="btn" onclick="catAdd()"><i class="bi bi-plus-circle"></i> إضافة</button></div>` : ''}
+  return `<h2><i class="bi bi-tags"></i> إدارة التصنيفات</h2><p class="sm ct">تصنيفات ديناميكية تتحكم بخيارات القوائم المنسدلة في جميع أقسام النظام</p>
+<div class="tabs">${CAT_GROUPS.map(g => `<button type="button" class="${g[0] === CG ? 'on' : ''}" style="flex:none" onclick="catGrp('${g[0]}')">${g[1]}</button>`).join('')}</div>
+<h3 class="ct"><span style="color:var(--p)">${gl} <i class="bi bi-tags"></i></span></h3><p class="sm ct">عدد التصنيفات: ${L.length}</p>${cc ? `<div class="card"><label class="f">اسم التصنيف الجديد <i>*</i></label><input id="cn" placeholder="اسم التصنيف الجديد"><div class="grid"><div><label class="f">اللون</label><select id="cc">${COLORS.map(c => `<option value="${c[1]}">${c[0]}</option>`).join('')}</select></div><div><label class="f">الأيقونة (اختياري)</label><input id="ci" dir="ltr" placeholder="bi-heart"></div></div><button class="btn" onclick="catAdd()"><i class="bi bi-plus-circle"></i> إضافة</button></div>` : ''}
 <div class="card ov"><table><tr><th>#</th><th>المعاينة</th><th>الاسم</th><th>اللون</th><th>الأيقونة</th><th>الحالة</th><th>الإعدادات</th></tr>${L.map((c, i) => `<tr><td>${i + 1}</td><td>${catBadge(c.id)}</td><td>${esc(c.name)}</td><td><span class="bg" style="background:${esc(c.color)}${c.color === '#ffc107' ? ';color:#000' : ''}">${cn(c.color)}</span></td><td>${c.icon ? `<i class="bi ${esc(c.icon)}" style="font-size:20px"></i>` : '—'}</td><td>${stb(c.status)}</td><td class="act">${ce ? `<button class="btn xs o" ${i ? '' : 'disabled'} onclick="catMove('${c.id}',-1)"><i class="bi bi-arrow-up"></i></button><button class="btn xs o" ${i < L.length - 1 ? '' : 'disabled'} onclick="catMove('${c.id}',1)"><i class="bi bi-arrow-down"></i></button><button class="btn xs y" title="${c.status === 'مفعل' ? 'إخفاء' : 'إظهار'}" onclick="catToggle('${c.id}')"><i class="bi bi-eye${c.status === 'مفعل' ? '-slash' : ''}"></i></button><button class="btn xs" onclick="catEdit('${c.id}')"><i class="bi bi-pencil-square"></i></button>` : ''}${cd ? `<button class="btn xs d" onclick="catDel('${c.id}')"><i class="bi bi-trash3"></i></button>` : ''}</td></tr>`).join('')}</table>${L.length ? '' : '<div class="em"><i class="bi bi-inbox"></i>لا توجد تصنيفات</div>'}</div><p class="sm ct"><i class="bi bi-info-circle"></i> الأيقونات من <a href="https://icons.getbootstrap.com" target="_blank" rel="noopener">Bootstrap Icons</a> — مثال: bi-heart, bi-star, bi-cash-coin</p>`;
 }
 const cleanIcon = v => { v = v.trim(); return !v ? '' : /^bi-[a-z0-9-]+$/.test(v) ? v : /^[a-z0-9-]+$/.test(v) ? 'bi-' + v : null; };
 function catAdd() {
-  const n = $('#cn').value.trim(), ic = cleanIcon($('#ci').value); if (!n) return T('⚠️ اسم التصنيف مطلوب'); if (ic === null) return T('⚠️ اسم الأيقونة غير صحيح'); if (dupName('cats', n)) return T('⚠️ التصنيف موجود');
-  const t = Date.now(); S.cats.push({ id: 'c_' + uid(), name: n, color: $('#cc').value, icon: ic, status: 'مفعل', _c: t, _u: t }); logOp('إنشاء', 'التصنيفات', n); save(); T('✅ تمت الإضافة'); render(true);
+  const n = $('#cn').value.trim(), ic = cleanIcon($('#ci').value); if (!n) return T('⚠️ اسم التصنيف مطلوب'); if (ic === null) return T('⚠️ اسم الأيقونة غير صحيح'); if (dupName('cats', n, null, x => (x.grp || 'benef') === CG)) return T('⚠️ التصنيف موجود');
+  const t = Date.now(), mx = Math.max(t, ...catsOf(CG).map(c => c._c + 1)); S.cats.push({ id: 'c_' + uid(), grp: CG, name: n, color: $('#cc').value, icon: ic, status: 'مفعل', _c: mx, _u: t }); logOp('إنشاء', 'التصنيفات', n); save(); T('✅ تمت الإضافة'); render(true);
 }
-function catMove(id, d) { const L = [...live('cats')].sort((a, b) => a._c - b._c), i = L.findIndex(c => c.id === id), j = i + d; if (j < 0 || j >= L.length) return; const a = L[i], b = L[j], t = a._c; a._c = b._c; b._c = t; touch(a); touch(b); save(); render(true); }
+function catMove(id, d) { const c0 = get('cats', id), L = catsOf(c0.grp || 'benef'), i = L.findIndex(c => c.id === id), j = i + d; if (j < 0 || j >= L.length) return; const a = L[i], b = L[j], t = a._c; a._c = b._c; b._c = t; touch(a); touch(b); save(); render(true); }
 function catToggle(id) { const c = get('cats', id); c.status = c.status === 'مفعل' ? 'موقوف' : 'مفعل'; touch(c); logOp('تعديل', 'التصنيفات', c.name); save(); render(true); }
 function catEdit(id) {
   const c = get('cats', id);
   modal('<i class="bi bi-pencil-square"></i> تعديل تصنيف', `<label class="f">الاسم <i>*</i></label><input id="en" value="${esc(c.name)}"><label class="f">اللون</label><select id="ec">${COLORS.map(x => `<option value="${x[1]}" ${x[1] === c.color ? 'selected' : ''}>${x[0]}</option>`).join('')}</select><label class="f">الأيقونة</label><input id="ei" dir="ltr" value="${esc(c.icon || '')}"><button class="btn" onclick="catSave('${id}')"><i class="bi bi-check2-circle"></i> حفظ</button>`);
 }
-function catSave(id) { const c = get('cats', id), n = $('#en').value.trim(), ic = cleanIcon($('#ei').value); if (!n) return T('⚠️ الاسم مطلوب'); if (ic === null) return T('⚠️ اسم الأيقونة غير صحيح'); if (dupName('cats', n, id)) return T('⚠️ التصنيف موجود'); Object.assign(c, { name: n, color: $('#ec').value, icon: ic }); touch(c); logOp('تعديل', 'التصنيفات', n); save(); closeM(); T('✅ تم الحفظ'); render(true); }
-function catDel(id) { const c = get('cats', id), n = live('beneficiaries').filter(b => (b.cats || []).includes(id)).length; if (n) return T(`⚠️ لا يمكن حذف التصنيف: مستخدم لدى ${n} مستفيد`); confirmBox(`حذف التصنيف «${esc(c.name)}»؟`, () => { c.deleted = true; touch(c); logOp('حذف', 'التصنيفات', c.name); save(); T('🗑 تم الحذف'); render(true); }, 'حذف'); }
+function catSave(id) {
+  const c = get('cats', id), g = c.grp || 'benef', n = $('#en').value.trim(), ic = cleanIcon($('#ei').value); if (!n) return T('⚠️ الاسم مطلوب'); if (ic === null) return T('⚠️ اسم الأيقونة غير صحيح'); if (dupName('cats', n, id, x => (x.grp || 'benef') === g)) return T('⚠️ التصنيف موجود');
+  if (n !== c.name) (CAT_USE[g] || []).forEach(([co, f]) => S[co].forEach(r => { if (!r.deleted && r[f] === c.name) { r[f] = n; touch(r); } }));
+  Object.assign(c, { name: n, color: $('#ec').value, icon: ic }); touch(c); logOp('تعديل', 'التصنيفات', n); save(); closeM(); T('✅ تم الحفظ'); render(true);
+}
+function catDel(id) { const c = get('cats', id), n = catUse(c); if (n) return T(`⚠️ لا يمكن حذف التصنيف: مستخدم في ${n} سجل`); confirmBox(`حذف التصنيف «${esc(c.name)}»؟`, () => { c.deleted = true; touch(c); logOp('حذف', 'التصنيفات', c.name); save(); T('🗑 تم الحذف'); render(true); }, 'حذف'); }
 
 /* ---------- التقارير ---------- */
 const RF = { id: '', v: {} };

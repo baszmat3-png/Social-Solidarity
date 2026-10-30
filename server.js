@@ -300,7 +300,7 @@ app.post('/api/verify', limiter('verify', 30), async (req, res) => {
 
 /* ---------- الواجهة ---------- */
 app.use('/api', (_, res) => res.status(404).json({ error: 'not_found' }));
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '5m' }));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: 0, etag: true }));
 app.use((_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 store.init().then(() => app.listen(PORT, () => console.log('تكافل يعمل على المنفذ ' + PORT)))

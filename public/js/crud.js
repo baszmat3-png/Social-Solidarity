@@ -313,11 +313,24 @@ function fieldHtml(f, rec) {
 }
 function linksHtml(f) {
   const arr = FORM.links[f.id], img = f.kind === 'img';
-  return `<div class="sec"><i class="bi ${img ? 'bi-image' : 'bi-play-circle'}"></i> ${f.l}</div>${img ? `<div class="hint">الأبعاد الموصى بها: <b>800×450</b> بكسل (نسبة 16:9). لرفع الصور مجاناً استخدم <a href="https://imgur.com" target="_blank" rel="noopener">imgur.com</a> ثم انسخ الرابط المباشر (Direct link). ⚠️ روابط صور فيسبوك مؤقتة وتنتهي بعد أيام — استخدم مواقع رفع ثابتة.</div>` : `<div class="hint">يدعم يوتيوب وفيسبوك — الصق رابط الفيديو الكامل. لفيديو فيسبوك: انسخ الرابط من المتصفح مباشرة.</div>`}
-<div class="lk"><input id="lki_${f.id}" dir="ltr" placeholder="${img ? 'https://example.com/photo.jpg' : 'https://www.youtube.com/watch?v=xxx'}"><button type="button" class="btn s o" onclick="lkAdd('${f.id}','${f.kind}')"><i class="bi bi-plus-lg"></i> إضافة</button></div>
+  return `<div class="sec"><i class="bi ${img ? 'bi-image' : 'bi-play-circle'}"></i> ${f.l}</div>${img ? `<div class="hint">اختر الصور مباشرة من الاستوديو — الأبعاد الموصى بها <b>800×450</b> بكسل (نسبة 16:9). تُصغَّر الصور تلقائياً قبل الرفع.</div>` : `<div class="hint">يدعم يوتيوب وفيسبوك — الصق رابط الفيديو الكامل. لفيديو فيسبوك: انسخ الرابط من المتصفح مباشرة.</div>`}
+${img ? `<div class="lk"><button type="button" class="btn s o" onclick="$('#lkf_${f.id}').click()"><i class="bi bi-images"></i> إضافة صورة من الاستوديو</button><input type="file" id="lkf_${f.id}" accept="image/*" multiple hidden onchange="lkUpload('${f.id}',this)"></div>` : `<div class="lk"><input id="lki_${f.id}" dir="ltr" placeholder="https://www.youtube.com/watch?v=xxx"><button type="button" class="btn s o" onclick="lkAdd('${f.id}','${f.kind}')"><i class="bi bi-plus-lg"></i> إضافة</button></div>`}
 <div id="lkl_${f.id}">${linkList(f.id)}</div>`;
 }
-const linkList = id => FORM.links[id].length ? FORM.links[id].map((u, i) => `<div class="lkl"><span>${esc(u)}</span><i class="bi bi-x-circle" onclick="lkDel('${id}',${i})"></i></div>`).join('') : `<div class="em" style="padding:8px"><i class="bi bi-${id === 'images' ? 'image' : 'play-circle'}"></i>لا توجد روابط — أضف أول رابط أعلاه</div>`;
+const linkList = id => FORM.links[id].length ? FORM.links[id].map((u, i) => `<div class="lkl">${id === 'images' ? `<img src="${esc(u)}" alt="" style="height:44px;width:72px;object-fit:cover;border-radius:6px">` : `<span>${esc(u)}</span>`}<i class="bi bi-x-circle" onclick="lkDel('${id}',${i})"></i></div>`).join('') : `<div class="em" style="padding:8px"><i class="bi bi-${id === 'images' ? 'image' : 'play-circle'}"></i>${id === 'images' ? 'لا توجد صور — أضف أول صورة من الاستوديو' : 'لا توجد روابط — أضف أول رابط أعلاه'}</div>`;
+const imgShrink = (file, max, q) => new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', q)); }; im.onerror = () => { URL.revokeObjectURL(u); no(new Error('img')); }; im.src = u; });
+async function lkUpload(id, inp) {
+  const files = [...inp.files]; inp.value = '';
+  for (const f of files) {
+    if (FORM.links[id].length >= 10) { T('⚠️ الحد الأقصى 10 صور'); break; }
+    if (!/^image\//.test(f.type)) { T('⚠️ الملف المختار ليس صورة'); continue; }
+    try {
+      T('⏳ جارٍ رفع الصورة...');
+      const r = await API('/media', { method: 'POST', body: JSON.stringify({ data: await imgShrink(f, 1280, 0.82) }) });
+      FORM.links[id].push(r.url); $('#lkl_' + id).innerHTML = linkList(id); T('✅ تمت إضافة الصورة');
+    } catch (e) { T(e && e.status === 413 ? '⚠️ حجم الصورة كبير' : '⚠️ تعذر رفع الصورة'); }
+  }
+}
 function lkAdd(id, kind) { const i = $('#lki_' + id), u = i.value.trim(); if (!u) return; if (!isUrl(u)) return T('⚠️ الرابط غير صحيح (يبدأ بـ https://)'); if (kind === 'vid' && !videoEmbed(u)) return T('⚠️ الفيديو غير مدعوم — استخدم رابط يوتيوب أو فيسبوك'); if (FORM.links[id].includes(u)) return T('⚠️ الرابط مضاف مسبقاً'); FORM.links[id].push(u); i.value = ''; $('#lkl_' + id).innerHTML = linkList(id); }
 function lkDel(id, i) { FORM.links[id].splice(i, 1); $('#lkl_' + id).innerHTML = linkList(id); }
 function donCamp(sel) { const c = get('campaigns', sel.value), f = $('#f_fund'); if (c && f) { f.value = c.fund; f.disabled = true; } else if (f) f.disabled = false; }

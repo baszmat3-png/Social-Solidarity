@@ -12,15 +12,25 @@ function qrSvg(text) {
   return '';
 }
 function rcOne(d, label, R) {
-  const e = R.els, no = rcNo(d), logo = e.logo && S.P.logo ? `<img src="${esc(S.P.logo)}" alt="">` : '', t = R.tpl;
-  const rows = [['رقم الوصل', `<span dir="ltr">${no}</span>`], ['التاريخ', fd(d.date)], ['المتبرع', esc(nm('donors', d.donor))], ['الصندوق', esc(nm('funds', d.fund))], ['الحملة', esc(nm('campaigns', d.campaign))], ['طريقة الدفع', esc(d.method || '—')]];
-  const rowH = rows.map(r => `<div class="row"><span>${r[0]}</span><b>${r[1]}</b></div>`).join('');
-  const amt = `<div class="${t === 2 ? 'amt' : 'row amt'}">${t === 2 ? `<div style="font-size:11px;font-weight:400">المبلغ</div>${money(d.amount)}<div style="font-size:11px;font-weight:400">دينار عراقي</div>` : `<span>المبلغ</span><b>${money(d.amount)} دينار عراقي</b>`}</div>`;
-  const qr = e.qr ? `<div><div class="qr">${qrSvg(location.origin + '/#verify:' + no) || 'QR'}</div></div>` : '';
-  const sg = `<div class="sg"><div>${e.rcv ? `المستلم<br><b>${esc(d.by || (ME && ME.name) || '')}</b>` : ''}${e.sign ? '<div class="ln">التوقيع</div>' : ''}</div>${qr}<div>${e.stamp ? '<div class="stp">الختم</div><div>ختم المؤسسة</div>' : ''}</div></div>`;
-  const head = t === 2 ? `<div class="org">${logo}<h4>${esc(S.P.name)}</h4><div class="tt">وصل استلام تبرع</div></div>` : `<div class="org"><div><h4>${esc(S.P.name)}</h4>${t === 3 ? '' : '<div class="tt">وصل استلام تبرع</div>'}</div>${logo}${t === 3 ? '<div class="tt">وصل استلام تبرع</div>' : ''}</div>`;
-  const inner = (t === 2 ? '<div class="bd">' : '') + (t === 2 ? '' : head) + (t === 2 ? amt + rowH : rowH + amt) + (e.words ? `<div class="wd">فقط ${words(d.amount)} دينار عراقي لا غير</div>` : '') + (e.notes && d.notes ? `<div class="row"><span>ملاحظات: ${esc(d.notes)}</span></div>` : '') + sg + (t === 2 ? '</div>' : '');
-  return `<div class="rcp t${t}">${label ? `<div class="lb">${label}</div>` : ''}${t === 2 ? head : ''}${inner}</div>`;
+  const e = R.els, no = rcNo(d), t = R.tpl, logo = e.logo && S.P.logo ? `<img class="lg" src="${esc(S.P.logo)}" alt="">` : '', org = esc(S.P.name);
+  const donor = esc(nm('donors', d.donor)), fund = esc(nm('funds', d.fund)), camp = esc(nm('campaigns', d.campaign)), method = esc(d.method || '—'), amt = money(d.amount), dt = fd(d.date), by = esc(d.by || (ME && ME.name) || '');
+  const noH = `<span dir="ltr">${no}</span>`, wd = e.words ? words(d.amount) : '', notes = e.notes && d.notes ? esc(d.notes) : '';
+  const qr = e.qr ? `<div class="c"><div class="qr">${qrSvg(location.origin + '/#verify:' + no) || 'QR'}</div><small>${t === 3 ? 'التحقق' : 'امسح للتحقق'}</small></div>` : '';
+  const rc = e.rcv || e.sign ? `<div class="c">${e.rcv ? `<small>المستلم</small><b>${by}</b>` : ''}${e.sign ? '<div class="ln">التوقيع</div>' : ''}</div>` : '';
+  const st = e.stamp ? (t === 3 ? '<div class="c"><small>ختم المؤسسة</small><div class="stp">الختم</div></div>' : `<div class="c"><small>${t === 4 || t === 2 ? 'الختم' : 'ختم المؤسسة'}</small><div class="ln"></div></div>`) : '';
+  const sg = `<div class="sg">${rc}${qr}${st}</div>`;
+  const rows = [['المتبرع', donor], ['الصندوق', fund], ['الحملة', camp], ['طريقة الدفع', method]];
+  let body = '';
+  if (t === 1) {
+    body = `<div class="rh"><h4>${org}</h4><div class="tt">وصل استلام تبرع</div></div><div class="meta"><span>رقم الوصل: ${noH}</span><span>التاريخ: ${dt}</span></div>${rows.map(r => `<div class="row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('')}<div class="row am"><span class="k">المبلغ</span><span class="v"><b>${amt} د.ع</b></span></div>${wd ? `<div class="wd">${wd} دينار عراقي</div>` : ''}${notes ? `<div class="nt">ملاحظات: ${notes}</div>` : ''}${sg}`;
+  } else if (t === 2) {
+    body = `<div class="rh">${logo}<h4>${org}</h4><div class="tt">وصل استلام تبرع</div></div><div class="bd"><div class="pills"><span class="p1">${noH}</span><span class="p2">${dt}</span></div><div class="big"><small>المبلغ</small><b>${amt}</b><small>دينار عراقي</small>${wd ? `<div class="wd2">${wd} دينار عراقي</div>` : ''}</div>${rows.map(r => `<div class="row"><span class="k">${r[0]}</span><b>${r[1]}</b></div>`).join('')}${notes ? `<div class="nt">ملاحظات: ${notes}</div>` : ''}${sg}</div>`;
+  } else if (t === 3) {
+    body = `<div class="rh">${logo}<h4>${org}</h4><div class="tt">وصل استلام تبرع</div><div class="orn"><i></i>✦<i></i></div></div><div class="meta"><span>رقم الوصل: ${noH}</span><span>التاريخ: ${dt}</span></div><table>${rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}<tr class="am"><th>المبلغ</th><td>${amt} دينار عراقي</td></tr></table>${wd ? `<div class="wd">فقط ${wd} دينار عراقي لا غير</div>` : ''}${notes ? `<div class="nt">ملاحظات: ${notes}</div>` : ''}${sg}`;
+  } else {
+    body = `<div class="hd4"><b>${org}</b><span>وصل تبرع</span></div><div class="l"><span>الوصل: ${noH}</span><span>التاريخ: ${dt}</span></div><div class="l am"><span>المتبرع: ${donor}</span><b>المبلغ: ${amt} د.ع</b></div><div class="l"><span>الصندوق: ${fund}</span><span>الحملة: ${camp}</span><span>الدفع: ${method}</span></div>${wd ? `<div class="wd">${wd} دينار عراقي</div>` : ''}${notes ? `<div class="nt">ملاحظات: ${notes}</div>` : ''}${sg}`;
+  }
+  return `<div class="rcp t${t}${R.orient === 'landscape' ? ' ls' : ''}">${label ? `<div class="lb">${label}</div>` : ''}${body}</div>`;
 }
 function rcPages(d, R) {
   const L = R.copies === 2 ? ['نسخة المؤسسة', 'نسخة المتبرع'] : [''];

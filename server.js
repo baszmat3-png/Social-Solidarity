@@ -224,6 +224,24 @@ app.get('/api/img/:name', async (req, res) => {
   res.set({ 'Content-Type': r.type, 'Cache-Control': 'public, max-age=300' }).send(Buffer.from(r.b64, 'base64'));
 });
 
+/* ---------- API: صور الحملات والمشاريع (مرفوعة من الاستوديو) ---------- */
+app.post('/api/media', auth, async (req, res) => {
+  try {
+    if (!['campaigns.create', 'campaigns.edit', 'projects.create', 'projects.edit', 'settings.public'].some(k => req.user.has(k))) return res.status(403).json({ error: 'forbidden' });
+    const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String((req.body && req.body.data) || ''));
+    if (!m) return res.status(400).json({ error: 'bad_image' });
+    if (Buffer.from(m[2], 'base64').length > 3 * 1024 * 1024) return res.status(413).json({ error: 'too_large' });
+    const id = crypto.randomBytes(8).toString('hex');
+    await store.set('media:' + id, { type: m[1], b64: m[2], v: Date.now() });
+    res.json({ url: `/api/media/${id}` });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'server' }); }
+});
+app.get('/api/media/:id', async (req, res) => {
+  const r = /^[a-f0-9]{16}$/.test(req.params.id) && await store.get('media:' + req.params.id);
+  if (!r) return res.status(404).end();
+  res.set({ 'Content-Type': r.type, 'Cache-Control': 'public, max-age=86400' }).send(Buffer.from(r.b64, 'base64'));
+});
+
 /* ---------- API: عام (للزوار) ---------- */
 const num = v => +v || 0;
 const rcNo = (d, all) => {
@@ -233,7 +251,7 @@ const rcNo = (d, all) => {
 const confirmed = d => !d.deleted && d.status !== 'بانتظار التأكيد';
 const approved = e => !e.deleted && e.status !== 'بانتظار الموافقة';
 const normPhone = s => String(s || '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/\D/g, '').replace(/^00/, '').replace(/^964/, '').replace(/^0+/, '');
-const safeUrl = u => /^https?:\/\//i.test(u) ? u : '';
+const safeUrl = u => /^(https?:\/\/|\/api\/media\/[a-f0-9]{16}$)/i.test(u) ? u : '';
 
 app.get('/api/public', async (_, res) => {
   const S = (await stateOf()).S || {}, P = S.P || {}, sec = P.sections || {};

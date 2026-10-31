@@ -66,7 +66,7 @@ const ENT = {
     check: (d, o) => { if (d.head && d.family && live('beneficiaries').some(b => b.family === d.family && b.head && b.id !== (o && o.id))) return 'هذه العائلة لديها رب عائلة آخر'; },
   },
   donors: {
-    t: 'إدارة المتبرعين', ic: 'bi-person-hearts', add: 'إضافة متبرع', mk: 'إضافة المتبرع', sg: 'متبرع', ph: 'بحث بالاسم، الهاتف، البريد...', g: 'donors',
+    t: 'إدارة المتبرعين', ic: 'bi-person-hearts', add: 'إضافة متبرع', imp: 1, mk: 'إضافة المتبرع', sg: 'متبرع', ph: 'بحث بالاسم، الهاتف، البريد...', g: 'donors',
     fields: [{ id: 'name', l: 'اسم المتبرع', t: 'text', req: 1, ph: 'اسم المتبرع' }, { id: 'phone', l: 'رقم الهاتف', t: 'tel' }, { id: 'email', l: 'البريد الإلكتروني', t: 'email' }, { id: 'idno', l: 'رقم الهوية', t: 'text' },
       { id: 'type', l: 'نوع المتبرع', t: 'select', opts: catOpts('donor'), blank: 1, cg: 1 }, { id: 'city', l: 'المدينة', t: 'text' }, { id: 'addr', l: 'العنوان', t: 'text' }, { id: 'status', l: 'الحالة', t: 'select', opts: ST2, def: 'مفعل' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
     cols: [{ id: 'name', l: 'الاسم', r: r => `<b>${esc(r.name)}</b>`, s: r => r.name }, { id: 'phone', l: 'الهاتف', r: r => esc(r.phone || '—') }, { id: 'type', l: 'النوع', r: r => esc(r.type || '—'), s: r => r.type || '' }, { id: 'city', l: 'المدينة', r: r => esc(r.city || '—') },
@@ -211,7 +211,7 @@ function listPage(k) {
   const filt = (E.filters || []).map(f => `<select onchange="lf('${k}','${f.id}',this.value)"><option value="">${f.l}</option>${optList(f.opts).map(([v, l]) => `<option value="${esc(v)}" ${st.f[f.id] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`).join('');
   const hid = E.cols.map(c => `<label><input type="checkbox" ${st.hide.has(c.id) ? '' : 'checked'} onchange="lcol('${k}','${c.id}',this.checked)"> ${c.l}</label>`).join('');
   return `<h2><i class="bi ${E.ic}"></i> ${E.t}</h2>${E.stats ? E.stats() : ''}
-<div class="card"><div class="tb">${can(p + '.create') ? `<button class="btn o" onclick="openForm('${k}')"><i class="bi bi-plus-lg"></i> ${E.add}</button>` : ''}<div class="dd"><button class="btn o" style="width:auto" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden"><i class="bi bi-layout-three-columns"></i></button><div class="dd-m" hidden>${hid}</div></div></div>
+<div class="card"><div class="tb">${can(p + '.create') ? `<button class="btn o" onclick="openForm('${k}')"><i class="bi bi-plus-lg"></i> ${E.add}</button>` : ''}${E.imp && can(p + '.create') ? `<button class="btn o" onclick="impOpen()"><i class="bi bi-file-earmark-excel"></i> استيراد</button>` : ''}<div class="dd"><button class="btn o" style="width:auto" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden"><i class="bi bi-layout-three-columns"></i></button><div class="dd-m" hidden>${hid}</div></div></div>
 <input placeholder="${E.ph}" value="${esc(st.q)}" oninput="lq('${k}',this.value)">
 <div class="grid">${filt}</div>${E.dates ? `<div class="grid"><div><label class="f">من تاريخ</label><input type="date" value="${st.from}" onchange="ls('${k}').from=this.value;ls('${k}').page=1;refreshList('${k}')"></div><div><label class="f">إلى تاريخ</label><input type="date" value="${st.to}" onchange="ls('${k}').to=this.value;ls('${k}').page=1;refreshList('${k}')"></div></div>` : ''}
 <div class="grid"><select onchange="ls('${k}').size=+this.value;ls('${k}').page=1;refreshList('${k}')">${[10, 25, 50, 100].map(n => `<option ${st.size === n ? 'selected' : ''}>${n}</option>`).join('')}</select>

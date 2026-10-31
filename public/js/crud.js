@@ -89,7 +89,7 @@ const ENT = {
   },
   donations: {
     t: 'التبرعات', ic: 'bi-cash-coin', add: 'إضافة تبرع', mk: 'تسجيل التبرع', sg: 'تبرع', ph: 'بحث بالمتبرع، رقم الوصل، المبلغ...', g: 'donations',
-    fields: [{ id: 'donor', l: 'المتبرع', t: 'select', opts: refsOpt('donors', d => d.status === 'مفعل'), req: 1, blank: 'اختر المتبرع...' },
+    fields: [{ id: 'donor', l: 'المتبرع', t: 'select', opts: () => live('donors').filter(d => d.status === 'مفعل').map(d => [d.id, d.name + (d.phone ? ' — ' + d.phone : '')]), req: 1, blank: 'اختر المتبرع...', srch: 1, addNew: 1 },
       { id: 'campaign', l: 'الحملة', t: 'select', opts: refsOpt('campaigns', c => c.status === 'نشطة'), blank: 'بدون حملة', onchange: 'donCamp(this)' },
       { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
       { id: 'amount', l: 'المبلغ (د.ع)', t: 'number', req: 1 }, { id: 'method', l: 'طريقة الدفع', t: 'select', opts: catOpts('pay'), def: 'نقدي', cg: 1 }, { id: 'date', l: 'التاريخ', t: 'date', req: 1, def: 'today' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
@@ -118,7 +118,7 @@ const ENT = {
   expenses: {
     t: 'الصرفيات', ic: 'bi-cash', add: 'إضافة صرفية', mk: 'تسجيل الصرفية', sg: 'صرفية', ph: 'بحث بالبند، المستفيد...', g: 'expenses',
     fields: [{ id: 'title', l: 'البند', t: 'text', req: 1, ph: 'مثال: سلة غذائية' }, { id: 'type', l: 'نوع الصرفية', t: 'select', opts: catOpts('exp'), blank: 1, cg: 1 }, { id: 'fund', l: 'الصندوق', t: 'select', opts: refsOpt('funds', f => f.status === 'مفعل'), req: 1, blank: 'اختر الصندوق...' },
-      { id: 'campaign', l: 'الحملة (للأموال المقيّدة)', t: 'select', opts: refsOpt('campaigns'), blank: 'بدون حملة' }, { id: 'project', l: 'المشروع', t: 'select', opts: refsOpt('projects'), blank: 'بدون مشروع' }, { id: 'ben', l: 'المستفيد', t: 'select', opts: refsOpt('beneficiaries', b => b.status === 'نشط'), blank: 'بدون مستفيد محدد' },
+      { id: 'campaign', l: 'الحملة (للأموال المقيّدة)', t: 'select', opts: refsOpt('campaigns'), blank: 'بدون حملة' }, { id: 'project', l: 'المشروع', t: 'select', opts: refsOpt('projects'), blank: 'بدون مشروع' }, { id: 'ben', l: 'المستفيد', t: 'select', opts: refsOpt('beneficiaries', b => b.status === 'نشط'), blank: 'بدون مستفيد محدد', srch: 1 },
       { id: 'amount', l: 'المبلغ (د.ع)', t: 'number', req: 1 }, { id: 'date', l: 'التاريخ', t: 'date', req: 1, def: 'today' }, { id: 'notes', l: 'ملاحظات', t: 'area' }],
     cols: [{ id: 'date', l: 'التاريخ', r: r => fd(r.date), s: r => r.date }, { id: 'title', l: 'البند', r: r => `<b>${esc(r.title)}</b>`, s: r => r.title }, { id: 'fund', l: 'الصندوق', r: r => rf('funds', r.fund), s: r => nm('funds', r.fund) }, { id: 'ben', l: 'المستفيد', r: r => rf('beneficiaries', r.ben), s: r => nm('beneficiaries', r.ben, '') },
       { id: 'project', l: 'المشروع', r: r => rf('projects', r.project), s: r => nm('projects', r.project, '') }, { id: 'amount', l: 'المبلغ', r: r => `<b>${money(r.amount)}</b>`, s: r => num(r.amount) }, { id: 'status', l: 'الحالة', r: r => stb(r.status || 'معتمدة'), s: r => r.status || 'معتمدة' }],
@@ -297,13 +297,36 @@ function selOpts(f, v) {
   let o = optList(f.opts); if (v && !o.some(x => x[0] === v)) { const nmv = typeof f.opts === 'function' && !f.cg ? null : v; const lab = ['fund', 'campaign', 'camp', 'area', 'family', 'donor', 'project', 'ben', 'from', 'to'].includes(f.id) ? nm({ fund: 'funds', campaign: 'campaigns', camp: 'campaigns', area: 'areas', family: 'families', donor: 'donors', project: 'projects', ben: 'beneficiaries', from: 'funds', to: 'funds' }[f.id], v, null) : nmv; if (lab) o = [...o, [v, lab]]; }
   return (f.blank ? `<option value="">${f.blank === 1 ? '—' : f.blank}</option>` : '') + o.map(([x, l]) => `<option value="${esc(x)}" ${x === v ? 'selected' : ''}>${esc(l)}</option>`).join('');
 }
+const srN = s => String(s == null ? '' : s).toLowerCase().replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[ً-ٟـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, ' ').trim();
+const acField = fid => ENT[FORM.k].fields.find(x => x.id === fid);
+function acReset(fid) { $('#f_' + fid).value = ''; acType(fid); }
+function acType(fid) {
+  const f = acField(fid), q = $('#fs_' + fid).value, terms = srN(q).split(' ').filter(Boolean), all = optList(f.opts), box = $('#ac_' + fid);
+  const hit = all.filter(([x, l]) => !terms.length || terms.every(t => srN(l).includes(t))), more = hit.length - 30;
+  box.innerHTML = hit.slice(0, 30).map(([x, l]) => `<div class="ai" onclick="acPick('${fid}','${esc(x)}')">${esc(l)}</div>`).join('') + (more > 0 ? `<div class="ai mt">و ${more} نتيجة أخرى — تابع الكتابة لتضييق البحث</div>` : '')
+    + (f.addNew && q.trim().length > 1 && !all.some(([, l]) => srN(l.split(' — ')[0]) === srN(q)) ? `<div class="ai add" onclick="acNew('${fid}')"><i class="bi bi-person-plus"></i> إضافة «${esc(q.trim())}» كمتبرع جديد</div>` : '')
+    + (!hit.length && !f.addNew ? '<div class="ai mt">لا توجد نتائج مطابقة</div>' : '');
+  box.hidden = !box.innerHTML;
+}
+function acPick(fid, v) {
+  const sel = $('#f_' + fid); sel.value = v; const o = sel.options[sel.selectedIndex];
+  $('#fs_' + fid).value = o ? o.textContent : ''; $('#ac_' + fid).hidden = true; if (sel.onchange) sel.onchange();
+}
+function acNew(fid) {
+  const name = $('#fs_' + fid).value.trim().replace(/\s+/g, ' ');
+  if (!can('donors.create')) return T('⚠️ لا تملك صلاحية إضافة متبرعين');
+  if (name.length < 2 || /^[\d\s+\-]+$/.test(name)) return T('⚠️ اكتب اسم المتبرع');
+  let d = live('donors').find(x => srN(x.name) === srN(name));
+  if (!d) { const t = Date.now(); d = { id: 'd_' + uid(), _c: t, _u: t, name, phone: '', status: 'مفعل' }; S.donors.push(d); logOp('إنشاء', 'إدارة المتبرعين', name); save(); T('✅ تمت إضافة المتبرع وتحديده'); }
+  const sel = $('#f_' + fid); if (![...sel.options].some(o => o.value === d.id)) sel.add(new Option(d.name, d.id)); acPick(fid, d.id);
+}
 function fieldHtml(f, rec) {
   const id = 'f_' + f.id; let v = rec ? rec[f.id] : undefined; if (v === undefined || v === null) v = f.def === 'today' ? td() : f.def ?? (f.t === 'toggle' ? false : f.t === 'range' ? 0 : f.t === 'links' || f.t === 'multi' ? [] : '');
   const L = `<label class="f">${f.l}${f.req ? ' <i>*</i>' : ''}</label>`, H = f.hint ? `<div class="hint">${f.hint}</div>` : '', A = f.after || '';
   const wrap = h => `<div class="fw" data-tab="${f.tab ?? ''}" ${f.half ? 'data-half="1"' : ''}>${h}${A}</div>`;
   switch (f.t) {
     case 'area': return wrap(L + `<textarea id="${id}" rows="3" placeholder="${esc(f.ph || f.l)}">${esc(v)}</textarea>` + H);
-    case 'select': return wrap(L + `<select id="${id}" ${f.onchange ? `onchange="${f.onchange}"` : ''}>${selOpts(f, v)}</select>` + H);
+    case 'select': return wrap(L + (f.srch ? `<div style="position:relative"><input id="fs_${f.id}" autocomplete="off" placeholder="🔍 اكتب للبحث بالاسم أو رقم الهاتف..." value="${esc((optList(f.opts).find(x => x[0] === v) || [0, v ? nm(f.id === 'donor' ? 'donors' : 'beneficiaries', v, '') : ''])[1])}" oninput="acReset('${f.id}')" onfocus="acType('${f.id}')" onblur="setTimeout(() => { const b = $('#ac_${f.id}'); if (b) b.hidden = true; }, 250)"><div class="ac" id="ac_${f.id}" hidden></div></div>` : '') + `<select id="${id}" ${f.srch ? 'hidden' : ''} ${f.onchange ? `onchange="${f.onchange}"` : ''}>${selOpts(f, v)}</select>` + H);
     case 'toggle': return wrap(`<label class="tg"><span>${f.l}${f.hint ? `<small>${f.hint}</small>` : ''}</span><input type="checkbox" id="${id}" ${v ? 'checked' : ''}><i></i></label>`);
     case 'range': return wrap(L + `<div style="display:flex;gap:10px;align-items:center"><span class="bg p" style="min-width:48px;text-align:center" id="${id}_v">${num(v)}%</span><input type="range" id="${id}" min="0" max="100" step="5" value="${num(v)}" oninput="$('#${id}_v').textContent=this.value+'%'"></div>`);
     case 'multi': { const o = optList(f.opts); return wrap(L + (o.length ? `<div class="chk" id="${id}">${o.map(([x, l]) => `<label class="${(v || []).includes(x) ? 'on' : ''}"><input type="checkbox" value="${esc(x)}" ${(v || []).includes(x) ? 'checked' : ''} onchange="this.parentNode.classList.toggle('on',this.checked);$('#tabcnt').textContent=$$('#${id} input:checked').length"> ${esc(l)}</label>`).join('')}</div>` : `<div class="em">لا توجد تصنيفات مفعّلة — أضفها من قسم التصنيفات</div>`)); }
@@ -363,7 +386,7 @@ async function saveForm() {
   for (const f of E.fields) {
     data[f.id] = readField(f);
     if (f.id === 'fund' && $('#f_fund').disabled) data.fund = $('#f_fund').value;
-    if (f.req && (data[f.id] === '' || data[f.id] == null)) { if (f.tab != null && E.tabs) formTab(f.tab); $('#f_' + f.id).focus(); return T('⚠️ الحقل مطلوب: ' + f.l); }
+    if (f.req && (data[f.id] === '' || data[f.id] == null)) { if (f.tab != null && E.tabs) formTab(f.tab); ($('#fs_' + f.id) || $('#f_' + f.id)).focus(); return T('⚠️ الحقل مطلوب: ' + f.l); }
   }
   for (const f of E.fields) if (f.t === 'number' && data[f.id] === '') data[f.id] = 0;
   const btn = $('#fsave'); btn.disabled = true;

@@ -145,3 +145,5 @@ footer{text-align:center;padding:20px 14px;border-top:3px solid var(--p);color:v
 }
 
 .m .hd i.x{display:inline-block;min-width:26px;min-height:26px;text-align:center;line-height:26px}
+
+.ac{position:absolute;inset-inline:0;top:100%;z-index:50;max-height:240px;overflow-y:auto;background:var(--c);border:1px solid var(--p);border-radius:10px;box-shadow:0 6px 18px #0004;margin-top:2px}.ac .ai{padding:10px 12px;border-bottom:1px solid var(--b);cursor:pointer;font-size:14px}.ac .ai:last-child{border:0}.ac .ai:hover,.ac .ai:active{background:var(--hi)}.ac .ai.add{color:var(--p);font-weight:700}.ac .ai.mt{color:var(--m);cursor:default;font-size:12px}

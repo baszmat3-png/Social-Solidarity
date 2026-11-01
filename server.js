@@ -303,5 +303,13 @@ app.use('/api', (_, res) => res.status(404).json({ error: 'not_found' }));
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: 0, etag: true }));
 app.use((_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-store.init().then(() => app.listen(PORT, () => console.log('تكافل يعمل على المنفذ ' + PORT)))
+/* ---------- منع الخمول: الخادم ينبّه نفسه كل 10 دقائق عبر رابطه العام ---------- */
+function keepAlive() {
+  const url = process.env.KEEPALIVE_URL || process.env.RENDER_EXTERNAL_URL;
+  if (!url || process.env.KEEPALIVE === 'off') return;
+  const ping = () => fetch(url.replace(/\/$/, '') + '/healthz', { signal: AbortSignal.timeout(20000) }).catch(e => console.log('keep-alive:', e.message));
+  setInterval(ping, 10 * 60 * 1000).unref();
+  console.log('keep-alive مفعّل: ' + url);
+}
+store.init().then(() => app.listen(PORT, () => { console.log('تكافل يعمل على المنفذ ' + PORT); keepAlive(); }))
   .catch(e => { console.error('فشل الاتصال بقاعدة البيانات', e); process.exit(1); });
